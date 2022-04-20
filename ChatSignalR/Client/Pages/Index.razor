@@ -3,8 +3,8 @@
 @inject IJSRuntime JSRuntime;
 @implements IAsyncDisposable
 
-<PageTitle>SignalR Chat</PageTitle>
-<h3>SignalR chat</h3>
+<PageTitle>Online Chat</PageTitle>
+<h3>Online Chat</h3>
 
 @if (!IsConnected)
 {
@@ -17,9 +17,10 @@
 }
 else
 {
+    <label>@onlineUsers User(s) online</label>
     <textarea style="width:100%; height: 500px;" @ref="TextAreaRef" disabled>
         @messages
-    </textarea>
+            </textarea>
     <div class="input-group">
         <input @bind-value="message"
            @bind-value:event="oninput"
@@ -27,7 +28,7 @@ else
            class="form-control">
         <button class="btn btn-primary form-control-append"
             @onclick="Send"
-            disabled="@(!IsConnected)">
+            disabled="@(!IsConnected || string.IsNullOrWhiteSpace(message))">
             Send
         </button>
     </div>
@@ -39,6 +40,7 @@ else
     private string messages = string.Empty;
     private string userName = string.Empty;
     private string message = string.Empty;
+    private int onlineUsers = 0;
     ElementReference TextAreaRef;
 
     private async Task Connect()
@@ -47,10 +49,11 @@ else
                             .WithUrl(NavigationManager.ToAbsoluteUri($"/chathub?username={userName}"))
                             .Build();
 
-        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        hubConnection.On<string, string, int>("ReceiveMessage", (user, message, totalOnlineUsers) =>
         {
             var msg = $"{(string.IsNullOrEmpty(user) ? "" : user + ": ")}{message}";
             messages += msg + "\n";
+            onlineUsers = totalOnlineUsers;
             JSRuntime.InvokeVoidAsync("scrollToBottom", TextAreaRef);
             StateHasChanged();
         });
@@ -62,14 +65,14 @@ else
     {
         if (hubConnection != null)
         {
-            await hubConnection.SendAsync("AddMessageToChat", userName, message);
+            await hubConnection.SendAsync("AddMessageToChat", userName, message.Trim());
             message = string.Empty;
         }
     }
 
     private async Task HandleInput(KeyboardEventArgs args)
     {
-        if (args.Key.Equals("Enter"))
+        if (args.Key.Equals("Enter") && !string.IsNullOrWhiteSpace(message))
         {
             await Send();
         }

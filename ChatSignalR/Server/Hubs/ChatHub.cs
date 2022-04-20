@@ -23,7 +23,7 @@ namespace ChatSignalR.Server.Hubs
 
         public async Task AddMessageToChat(string user, string message)
         {
-            await Clients.All.SendAsync("ReceiveMessage", user, message);
+            await Clients.All.SendAsync("ReceiveMessage", user, message, Users.Count);
         }
     }
 }

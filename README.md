@@ -1,1 +1,1 @@
-ChatSignalR
+Simples online chat with SignalR
